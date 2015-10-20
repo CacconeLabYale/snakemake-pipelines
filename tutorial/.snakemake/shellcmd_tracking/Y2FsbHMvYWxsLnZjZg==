@@ -1,0 +1,1 @@
+samtools mpileup -g -f data/genome.fa sorted_reads/A.bam sorted_reads/B.bam | bcftools call -mv - > calls/all.vcf
