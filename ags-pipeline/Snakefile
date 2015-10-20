@@ -1,0 +1,30 @@
+# This is an example Snakefile
+# You must clear it and add your own rules
+# See tutorial at: http://tiny.cc/snakemake_tutorial
+
+
+# establish config location:
+configfile: "configs/compare_MS_after_downsample.yaml"
+
+rule all:
+    input:
+        "report.html"
+
+rule: count_mapped_reads:
+    input:
+        bam=expand("{dir}/{fn}", dir=config["base_out"], fn=config["ms_sorted_bams"])
+
+    output:
+        config["base_out"] + "/"
+
+    shell:
+        "``samtools view -F 0X04 {input.bam} | wc -l > {output}"
+
+# rule bwa_map:
+#     input:
+#         "data/genome.fa",
+#         "data/samples/{sample}.fastq"
+#     output:
+#         "mapped_reads/{sample}.bam"
+#     shell:
+#         "bwa mem {input} | samtools view -Sb - > {output}"
