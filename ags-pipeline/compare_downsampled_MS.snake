@@ -75,21 +75,19 @@ rule calculate_downsample_rate:
             read_count_files=input.read_count_files
         )
 
-def get_DOWNSAMPLE_RATE_DICT(table_path):
+def get_downsample_rate(table_path,indiv):
     table = pd.read_csv(table_path)
-    dwnsmpl_dict = {}
-    for indiv in table.individual:
-        dwnsmpl_dict[indiv] = table[table["individual"] == indiv]['sample_rate']
-    return dwnsmpl_dict
+    
+    return table[table["individual"] == indiv]['sample_rate']
 
 rule downsample_with_picard:
     input:
         bam=expand(BAM_DIR+"/{individual}.sorted.bam", individual=MS_INDIVIDUALS),
 
     params:
-        rates=lambda wildcards: get_DOWNSAMPLE_RATE_DICT(table_path=OUT_DIR+"/downsample_data/rate_table.csv")[wildcards.individual]
+        rate=lambda wildcards: get_downsample_rate(table_path=OUT_DIR+"/downsample_data/rate_table.csv", indiv=wildcards.individual)
 
     output: expand(OUT_DIR+"/downsample_data/{individual}.sorted.downsampled.bam", individual=MS_INDIVIDUALS)
 
     shell:
-        "java jvm-args -jar "+PICARD+"/picard.jar DownsampleSam RANDOM_SEED=1 INPUT={input.bam} OUTPUT={output} PROBABILITY={params.rates}"
+        "java jvm-args -jar "+PICARD+"/picard.jar DownsampleSam RANDOM_SEED=1 INPUT={input.bam} OUTPUT={output} PROBABILITY={params.rate}"
