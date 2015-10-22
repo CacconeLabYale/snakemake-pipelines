@@ -4,6 +4,7 @@
 # REQUIRED: DO NOT CHANGE
 python>=3.4.3
 graphviz>=2.38.0
+snakemake>=3.4.2
 
 # Packages specific to your pipeline
 samtools
@@ -11,8 +12,10 @@ bowtie2
 bcftools
 vcftools
 plink
-bayescan2
-faststructure
+bayescan
+#faststructure
 bokeh
+matplotlib
 click
 pandas
+picard-meta>=20151020

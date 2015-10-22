@@ -4,6 +4,7 @@
 # REQUIRED: DO NOT CHANGE
 python>=3.4.3
 graphviz>=2.38.0
+snakemake>=3.4.2
 
 # Packages specific to your pipeline
 pkg1=version.number

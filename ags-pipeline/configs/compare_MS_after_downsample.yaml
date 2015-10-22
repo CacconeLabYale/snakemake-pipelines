@@ -3,18 +3,18 @@
 
 base_out: /scratch2/wd238/ddrad/phase1/MS_downsample_compare
 
-ms_sorted_bams:
-    - MS11_0001: /scratch/ag674/sample_mappedSC/MS11_0001.sorted.bam
-    - MS11_0004: /scratch/ag674/sample_mappedSC/MS11_0004.sorted.bam
-    - MS11_0006: /scratch/ag674/sample_mappedSC/MS11_0006.sorted.bam
-    - MS11_0012: /scratch/ag674/sample_mappedSC/MS11_0012.sorted.bam
-    - MS11_0013: /scratch/ag674/sample_mappedSC/MS11_0013.sorted.bam
-    - MS11_0014: /scratch/ag674/sample_mappedSC/MS11_0014.sorted.bam
-    - MS11_0015: /scratch/ag674/sample_mappedSC/MS11_0015.sorted.bam
-    - MS11_0017: /scratch/ag674/sample_mappedSC/MS11_0017.sorted.bam
-    - MS11_0019: /scratch/ag674/sample_mappedSC/MS11_0019.sorted.bam
-    - MS11_0020: /scratch/ag674/sample_mappedSC/MS11_0020.sorted.bam
-    - MS11_0021: /scratch/ag674/sample_mappedSC/MS11_0021.sorted.bam
-    - MS11_0024: /scratch/ag674/sample_mappedSC/MS11_0024.sorted.bam
-    - MS11_0031: /scratch/ag674/sample_mappedSC/MS11_0031.sorted.bam
-    - MS11_0050: /scratch/ag674/sample_mappedSC/MS11_0050.sorted.bam
+individuals:
+    - MS11_0001: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0001.sorted.bam
+    - MS11_0004: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0004.sorted.bam
+    - MS11_0006: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0006.sorted.bam
+    - MS11_0012: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0012.sorted.bam
+    - MS11_0013: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0013.sorted.bam
+    - MS11_0014: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0014.sorted.bam
+    - MS11_0015: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0015.sorted.bam
+    - MS11_0017: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0017.sorted.bam
+    - MS11_0019: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0019.sorted.bam
+    - MS11_0020: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0020.sorted.bam
+    - MS11_0021: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0021.sorted.bam
+    - MS11_0024: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0024.sorted.bam
+    - MS11_0031: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0031.sorted.bam
+    - MS11_0050: /scratch2/wd238/ddrad/phase1/sorted_bams/MS11_0050.sorted.bam

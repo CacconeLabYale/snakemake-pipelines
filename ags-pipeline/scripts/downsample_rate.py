@@ -1,8 +1,4 @@
-
-# coding: utf-8
-
-# In[1]:
-import seaborn as sns
+# import ipdb
 
 import bokeh as bk
 from bokeh import mpl
@@ -13,11 +9,9 @@ import os
 import glob
 import pandas as pd
 
-import click
 
 
 def get_sample_rate(original, sample_to):
-
     if original <= sample_to:
         return 1
 
@@ -31,32 +25,23 @@ def add_dwnsmpl_rate(df):
     df['sampled_read_coverage'] = df['sample_rate'] * df.mapped_reads
 
 
-@click.command()
-@click.option("--wk-dir", help='Change to this directory before executing logic.')
-@click.option("--count-file", help='File to save count table with.')
-@click.option("--file-pattern", help='Glob pattern to match files in bam directory.')
-@click.option("--fig-dir", help='Directory to save figures in.')
-def main(wk_dir, count_file, file_pattern, fig_dir):
 
-    if wk_dir:
-        os.chdir(wk_dir)
+def main(count_file, fig_dir, read_count_files=None, file_pattern=None):
 
-    # if file exists, remove before continuing
-    os.remove(count_file)
+    headers = ["individual","mapped_reads"]
 
-
-    headers = 'file,mapped_reads\n'
-    read_count_files = glob.glob('./{file_pattern}'.format(file_pattern=file_pattern))
+    if read_count_files is None:
+        read_count_files = glob.glob('{file_pattern}'.format(file_pattern=file_pattern))
 
     read_count_data = []
 
     for path in read_count_files:
-            bam = os.path.splitext(path)[0]
+            bam = os.path.splitext(os.path.basename(path))[0]
             count = open(path, 'rU').readline().rstrip('\n')
-            read_count_data.append((bam + ".bam", int(count)))
+            read_count_data.append((bam, int(count)))
 
 
-
+    # ipdb.set_trace()
     mapped_reads_df = pd.DataFrame(data=read_count_data, index=None, columns=headers)
     mapped_reads_df['all'] = 'all'
 
