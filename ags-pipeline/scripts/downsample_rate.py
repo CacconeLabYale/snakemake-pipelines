@@ -45,20 +45,20 @@ def main(count_file, fig_dir, read_count_files=None, file_pattern=None):
     mapped_reads_df = pd.DataFrame(data=read_count_data, index=None, columns=headers)
     mapped_reads_df['all'] = 'all'
 
-    # plot read numbers and distribution
-    box = c.BoxPlot(data=mapped_reads_df, label="all", values="mapped_reads",
-                  color=None, group=None,
-                  xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
-
-
-    bar = c.Bar(data=mapped_reads_df, label="file", values="mapped_reads",
-              color=None, stack=None, group=None,
-              agg='sum',
-              xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
-    p = c.hplot(bar,box)
-
-    c.output_file('{fig_dir}/original_read_numbers.html'.format(fig_dir=fig_dir))
-    c.show(c.vplot(p))
+    # # plot read numbers and distribution
+    # box = c.BoxPlot(data=mapped_reads_df, label="all", values="mapped_reads",
+    #               color=None, group=None,
+    #               xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
+    # 
+    # 
+    # bar = c.Bar(data=mapped_reads_df, label="file", values="mapped_reads",
+    #           color=None, stack=None, group=None,
+    #           agg='sum',
+    #           xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
+    # p = c.hplot(bar,box)
+    # 
+    # c.output_file('{fig_dir}/original_read_numbers.html'.format(fig_dir=fig_dir))
+    # c.save(c.vplot(p))
 
 
     # # Calculate the percentage to downsample for each individual
@@ -67,22 +67,22 @@ def main(count_file, fig_dir, read_count_files=None, file_pattern=None):
 
     add_dwnsmpl_rate(mapped_reads_df)
 
-    bar_old = c.Bar(data=mapped_reads_df, label="file", values="mapped_reads",
-                    color=None, stack=None, group=None,
-                    agg='sum',
-                    xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
-
-
-    bar_new  = c.Bar(data=mapped_reads_df, label="file", values="sampled_read_coverage",
-                     color=None, stack=None, group=None,
-                     agg='sum',
-                     xscale='categorical', yscale='linear', xgrid=False, ygrid=True,
-                     continuous_range=None)
-
-    bar_new.y_range = bar_old.y_range
-
-    c.output_file('{fig_dir}/compare_orig_to_dwnsampled.html'.format(fig_dir=fig_dir))
-    c.show(c.vplot(c.hplot(bar_old,bar_new)))
+    # bar_old = c.Bar(data=mapped_reads_df, label="file", values="mapped_reads",
+    #                 color=None, stack=None, group=None,
+    #                 agg='sum',
+    #                 xscale='categorical', yscale='linear', xgrid=False, ygrid=True, continuous_range=None)
+    # 
+    # 
+    # bar_new  = c.Bar(data=mapped_reads_df, label="file", values="sampled_read_coverage",
+    #                  color=None, stack=None, group=None,
+    #                  agg='sum',
+    #                  xscale='categorical', yscale='linear', xgrid=False, ygrid=True,
+    #                  continuous_range=None)
+    # 
+    # bar_new.y_range = bar_old.y_range
+    # 
+    # c.output_file('{fig_dir}/compare_orig_to_dwnsampled.html'.format(fig_dir=fig_dir))
+    # c.save(c.vplot(c.hplot(bar_old,bar_new)))
 
     # write out read number table with calculated downsample rates.
     mapped_reads_df.to_csv(path_or_buf=count_file, sep=',', index=False)
