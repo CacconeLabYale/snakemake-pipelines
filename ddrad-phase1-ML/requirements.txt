@@ -4,9 +4,14 @@
 # REQUIRED: DO NOT CHANGE
 python>=3.4.3
 graphviz>=2.38.0
+snakemake
 
 # Packages specific to your pipeline
-pkg1=version.number
-pkg2=version.number
-pkg3=version.number
-pkgN=version.number
+plink
+vcftools
+pandas
+scikit-learn
+numpy
+scipy
+bokeh
+xlrd

@@ -1,0 +1,123 @@
+
+import os
+import glob as g
+
+import pandas as pd
+
+from scripts import downsample_rate
+
+
+BAM_DIR = "/scratch2/wd238/ddrad/phase1/sorted_bams/MS"
+ORIG_SORTED_BAMS = g.glob(BAM_DIR+"/MS*.sorted.bam")
+
+OUT_ROOT = "/scratch2/wd238/ddrad/phase1/MS_downsample_pipeline"
+
+MS_INDIVIDUALS = ["MS11_0001",
+            "MS11_0004",
+            "MS11_0006",
+            "MS11_0012",
+            "MS11_0013",
+            "MS11_0014",
+            "MS11_0015",
+            "MS11_0017",
+            "MS11_0019",
+            "MS11_0020",
+            "MS11_0021",
+            "MS11_0024",
+            "MS11_0031",
+            "MS11_0050",]
+
+
+##### TOOLS #####
+PICARD = os.environ['CONDA_ENV_PATH']+"/picard/picard.jar"
+
+
+
+
+# rule clean:
+#     shell: "rm {OUT_ROOT}/MS*".format(OUT_ROOT=OUT_ROOT)
+
+
+######################## Obtain downsampled bams ########################
+
+rule count_mapped_reads:
+    input: BAM_DIR+"/{individual}.sorted.bam"
+
+    output: OUT_ROOT+"/mapped_counts/{individual}.mapped_reads"
+
+    shell:
+        "samtools view -F 0X04 {input} | "
+        "wc -l > {output}"
+
+
+rule calculate_downsample_rate:
+    input:
+        read_count_files=expand(OUT_ROOT+"/mapped_counts/{individual}.mapped_reads", individual=MS_INDIVIDUALS),
+
+    output:
+        count_file=OUT_ROOT+"/downsample_data/rate_table.csv",
+        fig_dir=OUT_ROOT+"/downsample_data/",
+
+    run:
+        downsample_rate.main(
+            count_file=output.count_file,
+            file_pattern=None,
+            fig_dir=output.fig_dir,
+            read_count_files=input.read_count_files
+        )
+
+
+def get_downsample_rate(table_path,indiv):
+    table = pd.read_csv(table_path)
+    return float(table[table["individual"] == indiv]['sample_rate'])
+
+rule downsample_with_picard:
+    input:
+        bam=BAM_DIR+"/{individual}.sorted.bam",
+        table=OUT_ROOT+"/downsample_data/rate_table.csv"
+    output:
+        OUT_ROOT+"/downsample_data/{individual}.sorted.downsampled.bam"
+    run:
+        rate = get_downsample_rate(table_path=input.table, indiv=wildcards.individual)
+
+        shell("java -jar {PICARD} DownsampleSam "
+
+              "RANDOM_SEED=1 "
+              "INPUT={input.bam} "
+              "OUTPUT={output} "
+
+              "PROBABILITY={rate}")
+
+
+######################## Generate VCFs for both sampled and unsampled ########################
+
+rule build_downsampled_vcf:
+    input: expand(rules.downsample_with_picard.output, individual=MS_INDIVIDUALS)
+    output:
+        OUT_ROOT+"/downsample_data/MS_downsampled_bcf_var"
+    shell: "samtools mpileup -t DP -t SP -uf /scratch/ag674/reference/Glossina-fuscipes-IAEA_SCAFFOLDS_GfusI1.fa {input} | "
+        "bcftools call -V indels -cvO v > {output}"
+
+rule build_nonsampled_vcf:
+    input: expand(rules.downsample_with_picard.input.bam, individual=MS_INDIVIDUALS)
+    output:
+        OUT_ROOT+"/nonsample_data/MS_nonsampled_bcf_var"
+    shell: "samtools mpileup -t DP -t SP -uf /scratch/ag674/reference/Glossina-fuscipes-IAEA_SCAFFOLDS_GfusI1.fa {input} | "
+        "bcftools call -V indels -cvO v > {output}"
+
+
+######################## Provide target for whole pipeline ########################
+rule all:
+    input:
+        # output from count_mapped_reads
+        expand(rules.count_mapped_reads.output, individual=MS_INDIVIDUALS),
+        #
+        # output from calculate_downsample_rate
+        rules.calculate_downsample_rate.output,
+        #
+        # output from downsample_with_picard
+        expand(rules.downsample_with_picard.output, individual=MS_INDIVIDUALS),
+        # 
+        # outputs from build VCF stage
+        rules.build_downsampled_vcf.output,
+        rules.build_nonsampled_vcf.output,
