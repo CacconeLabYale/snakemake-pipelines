@@ -1,0 +1,235 @@
+# This is an example Snakefile
+# You must clear it and add your own rules
+# See tutorial at: http://tiny.cc/snakemake_tutorial
+
+from snakemake.utils import report
+
+import pandas as pd
+
+CONDA_ENV = "/home2/wd238/.anaconda/envs/ddRAD-ML"
+
+
+############## MAIN INPUTS ##############
+ORIG_VCF_DIR = "/home2/wd238/data/genomes/glossina_fuscipes/annotations/SNPs/vcftools_out/ddrad58_populations/individuals"
+
+BIOCLIM = "/home2/wd238/data/projects/ddrad58/pop_coords_and_bioclim_data.csv"
+INFECTION_STATUS = "/home2/wd238/data/projects/ddrad58/Infection_Glossina_ddRADs_STATUS.xls"
+
+
+############## MAIN OUTPUT CONSTANTS ##############
+OUT_ROOT = "/scratch2/wd238/ddrad/phase1/ML_pipeline_out/gen_data_matrix"
+
+############## Tools ##############
+PLINK = CONDA_ENV+"/bin/plink"
+VCFTOOLS = CONDA_ENV+"/bin/vcftools"
+
+
+
+
+
+########################################################################################################################
+
+def write_chrom_map(vcf_path, chrom_map_path):
+
+    with open(vcf_path,'rU') as vcf:
+        with open(chrom_map_path,'w') as chrom_map:
+            for line in vcf:
+                if line.startswith("##contig=<ID="):
+                    contig = line.split('ID=')[1].split(',')[0]
+
+                    chrom_map.write("{contig}\t{contig}\n".format(contig=contig))
+
+                else:
+                    pass
+
+
+rule convert_to_plink:
+    input:
+        ORIG_VCF_DIR+"/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode.vcf"
+    params:
+        plink_prefix=ORIG_VCF_DIR+"/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode"
+    output:
+        ped_=ORIG_VCF_DIR+"/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode.ped",
+        map_=ORIG_VCF_DIR+"/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode.map",
+        chrom_map=ORIG_VCF_DIR+"/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode.vcf.chrom_map"
+    run:
+        write_chrom_map(vcf_path=input[0], chrom_map_path=output.chrom_map)
+
+        shell("{VCFTOOLS} --vcf {input} --plink --out {params.plink_prefix} --chrom-map {output.chrom_map}")
+
+########################################################################################################################
+
+pbLD_PARAMS = {"window": "100kb",
+            "step_size": "5",
+            "r2_thresh": "0.2"}
+pbLD_OUT_PREFIX = OUT_ROOT+"/pruned_by_LD/tsetseFINAL_14Oct2014_f2_53.recode.renamed_scaffolds.maf0_05.OT_MS_NB_indv.recode.indeppairwise_" + \
+                "{window}_{step_size}_{r2_thresh}".format(
+                window=pbLD_PARAMS["window"],
+                step_size=pbLD_PARAMS["step_size"],
+                r2_thresh=pbLD_PARAMS["r2_thresh"]
+                )
+rule prune_by_LD:
+    input:
+        ped_=rules.convert_to_plink.output.ped_,
+        map_=rules.convert_to_plink.output.map_
+
+    output:
+        pbLD_OUT_PREFIX+".prune.in",
+        pbLD_OUT_PREFIX+".prune.out"
+    run:
+        window = pbLD_PARAMS["window"]
+        step_size = pbLD_PARAMS["step_size"]
+        r2_thresh = pbLD_PARAMS["r2_thresh"]
+
+        shell("{PLINK} --allow-extra-chr --ped {input.ped_} --map {input.map_} --indep-pairwise {window} {step_size} {r2_thresh} --out {pbLD_OUT_PREFIX}")
+
+
+
+########################################################################################################################
+
+
+def write_dataframe(input_prefix):
+    indv_path = "{prefix}.012.indv".format(prefix=input_prefix)
+    pos_path = "{prefix}.012.pos".format(prefix=input_prefix)
+    table_path = "{prefix}.012".format(prefix=input_prefix)
+    out_path = "{prefix}.012.csv".format(prefix=input_prefix)
+
+    with open(indv_path) as indv:
+        indv = [ line.strip('\n') for line in list(indv)]
+        with open(pos_path) as pos:
+            pos = [ '_'.join(line.strip('\n').split()) for line in list(pos)]
+
+            # load 012 data and add pos as column names
+            df = pd.read_csv(filepath_or_buffer=table_path, sep='\t', header=None, index_col=None, names=pos, prefix=None)
+
+            # add indv
+            df['individual'] = indv
+            # df = df.set_index('indv')
+
+            df.to_csv(path_or_buf=out_path, sep=',', header=True, index=False)
+
+
+
+rule generate_allele_012_tables:
+    input:
+        ped_=rules.convert_to_plink.output.ped_,
+        map_=rules.convert_to_plink.output.map_,
+        indep=rules.prune_by_LD.output[0]
+    output:
+        vcf=OUT_ROOT+"/pruned_by_LD/indep-pairwise.vcf",
+        table_012=OUT_ROOT+"/pruned_by_LD/indep-pairwise.012",
+        table_012_indiv=OUT_ROOT+"/pruned_by_LD/indep-pairwise.012.indv",
+        table_012_pos=OUT_ROOT+"/pruned_by_LD/indep-pairwise.012.pos",
+        table_012_csv=OUT_ROOT+"/pruned_by_LD/indep-pairwise.012.csv",
+    params:
+        prefix=OUT_ROOT+"/pruned_by_LD/indep-pairwise"
+    run:
+
+        shell("{PLINK} --allow-extra-chr --ped {input.ped_} --map {input.map_} --extract {input.indep} --out {params.prefix} --recode vcf-iid &&"
+            "{VCFTOOLS} --vcf {output.vcf} --012 --out {params.prefix}"
+        )
+
+        write_dataframe(input_prefix=params.prefix)
+
+########################################################################################################################
+
+def recode_infection_data(df):
+
+    sample_func = lambda name: "{collection}_{individual}".format(collection=name.replace('_','')[:4],
+        individual=name.replace('_','')[4:]
+        )
+
+    infection_func = lambda status: True if status == 'yes' else False
+
+    df["Sample"] = df.Sample.apply(sample_func)
+    df["Infection"] = df.Infection.apply(infection_func)
+
+    return df
+
+def load_infection(path):
+    infection_data = pd.read_excel(path, sheetname="InfectionState")
+    infection_table = recode_infection_data(infection_data[["Sample","Infection"]].dropna())
+    infection_table = infection_table.rename(columns={"Sample":"sample","Infection":"infection"})
+    return infection_table
+
+def join_data(bioclim, genotype, infection):
+    bioclim = pd.read_csv(bioclim)
+    genotype = pd.read_csv(genotype)
+    infection = load_infection(infection)
+
+    # add village code to genotype
+    genotype["code"] = genotype.individual.apply(lambda x: x[:2])
+
+    # join genotype and bioclim on code
+    geno_clim = pd.merge(left=genotype, right=bioclim,
+        how='left', on='code'
+        )
+
+    # add infection status
+    geno_clim_infec = pd.merge(left=geno_clim, right=infection,
+        how='left', left_on='individual', right_on='sample'
+        )
+    return geno_clim_infec.drop('sample', 1)
+
+
+rule join_012_table_with_other_factor_variables:
+    input:
+        bioclim=BIOCLIM,
+        genotype=rules.generate_allele_012_tables.output.table_012_csv,
+        infection=INFECTION_STATUS,
+
+    output:
+        csv=OUT_ROOT+"/joined_matrix/data.csv"
+
+    run:
+        data = join_data(bioclim=input.bioclim, genotype=input.genotype, infection=input.infection)
+
+        data.to_csv(output.csv, index=False)
+
+
+
+
+########################################################################################################################
+
+# It would be good to report the versions of all the tools used
+
+rule report:
+    output:
+        path="report.html"
+    run:
+        window = pbLD_PARAMS["window"]
+        step_size = pbLD_PARAMS["step_size"]
+        r2_thresh = pbLD_PARAMS["r2_thresh"]
+
+        INDEP_LOCI_COUNT = len(list(open(rules.prune_by_LD.output[0])))
+
+        report("""
+        ==============================================================
+        Generate data matrix for Machine Learning on ddRAD phase1 data
+        ==============================================================
+
+        ``prune_by_LD`` rule
+        --------------------
+
+        **indep-pairwise params:**
+
+        * window: {window}
+        * step_size: {step_size}
+        * r2_thresh: {r2_thresh}
+
+        **Independent loci retained:**
+
+        * {INDEP_LOCI_COUNT}
+
+        """, output.path, metadata="Gus Dunn (gus.dunn@yale.edu)", **input)
+
+
+########################################################################################################################
+
+rule all:
+    input:
+        rules.convert_to_plink.output,
+        rules.prune_by_LD.output,
+        rules.generate_allele_012_tables.output,
+        rules.join_012_table_with_other_factor_variables.output,
+        rules.report.output

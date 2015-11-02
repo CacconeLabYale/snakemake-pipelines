@@ -1,0 +1,13 @@
+# This file may be used to create an environment using:
+# $ conda create --name env_name -c bioconda -c http://xguse.github.io/conda-package-repo/pkgs/channel/ -c NLeSC --file <this file>
+
+# REQUIRED: DO NOT CHANGE
+python>=3.4.3
+graphviz>=2.38.0
+snakemake>=3.4.2
+
+# Packages specific to your pipeline
+pkg1=version.number
+pkg2=version.number
+pkg3=version.number
+pkgN=version.number

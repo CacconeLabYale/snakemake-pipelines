@@ -1,0 +1,9 @@
+# This file may be used to create an environment using:
+# $ conda create --name snakemake-tutorial -c johanneskoester -c NLeSC --file <this file>
+bcftools=1.2
+bwa=0.7.12
+graphviz=2.38.0
+python=3.4.3
+samtools=1.2
+snakemake=3.4.2
+pyyaml=3.11
