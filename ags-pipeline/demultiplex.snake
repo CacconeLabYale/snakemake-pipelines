@@ -1,0 +1,37 @@
+
+import os
+import glob as g
+
+import pandas as pd
+
+# from scripts import downsample_rate
+
+
+##### conda environment path #####
+CONDA_ENV = os.environ['CONDA_ENV_PATH']
+
+##### external inputs #####
+INPUT_BASE = "/scratch2/wd238/ddrad/phase1/ags-pipe/starting_materials"
+
+
+FASTQ_INPUT_DIR = INPUT_BASE+"/fastq/raw"
+FASTQ_OUTPUT_DIR = INPUT_BASE+"/fastq/demultiplexed"
+
+INDEX_BARCODE_SAMPLE_MAP = INPUT_BASE+"/barcode_sample_maps/myfile.csv"
+
+
+
+##### TOOLS #####
+
+
+
+
+
+rule clean:
+    shell: "rm {OUT_ROOT}"
+
+
+######################## Provide target for whole pipeline ########################
+rule all:
+    input:
+        # output from count_mapped_reads

@@ -1,0 +1,52 @@
+
+import os
+import glob as g
+
+import pandas as pd
+
+# from scripts import downsample_rate
+
+
+
+# OUT_ROOT = "/scratch2/wd238/ddrad/phase1/ags-pipe/....
+
+##### conda environment path #####
+CONDA_ENV = os.environ['CONDA_ENV_PATH']
+
+##### external inputs #####
+BAM_DIR = ""
+REF_FASTA = "/home2/wd238/data/genomes/glossina_fuscipes/assemblies/GfusI1/Glossina-fuscipes-IAEA_SCAFFOLDS_GfusI1.fa"
+
+
+
+
+##### TOOLS #####
+PICARD = CONDA_ENV+"/picard/picard.jar"
+
+BOWTIE2 = CONDA_ENV+"/bowtie2"
+BOWTIE2_BUILD = CONDA_ENV+"/bowtie2-build"
+
+VCFTOOLS = CONDA_ENV+"/vcftools"
+BCFTOOLS = CONDA_ENV+"/bcftools"
+BCFTOOLS_VCFUTILS = CONDA_ENV+"/vcfutils.pl"
+SAMTOOLS = CONDA_ENV+"/samtools"
+
+PLINK = CONDA_ENV+"/plink"
+
+FAST_STRUCTURE = CONDA_ENV+""
+CHOOSE_K = CONDA_ENV+""
+
+BAYESCAN = CONDA_ENV+"/bayescan2"
+
+
+
+
+
+rule clean:
+    shell: "rm {OUT_ROOT}"
+
+
+######################## Provide target for whole pipeline ########################
+rule all:
+    input:
+        # output from count_mapped_reads
