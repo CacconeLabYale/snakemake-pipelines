@@ -1,1 +1,0 @@
-samtools sort -T sorted_reads/A -O bam mapped_reads/A.bam > sorted_reads/A.bam

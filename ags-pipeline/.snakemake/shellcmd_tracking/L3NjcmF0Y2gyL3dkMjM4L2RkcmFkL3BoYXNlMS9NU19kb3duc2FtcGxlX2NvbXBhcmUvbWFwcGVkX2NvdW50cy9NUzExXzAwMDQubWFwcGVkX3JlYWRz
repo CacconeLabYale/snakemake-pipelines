@@ -1,1 +1,0 @@
-samtools view -F 0X04 /scratch2/wd238/ddrad/phase1/sorted_bams/MS/MS11_0004.sorted.bam | wc -l > /scratch2/wd238/ddrad/phase1/MS_downsample_compare/mapped_counts/MS11_0004.mapped_reads
