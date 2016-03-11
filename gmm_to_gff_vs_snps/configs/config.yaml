@@ -1,0 +1,35 @@
+COMMON:
+    RUN_NAME: gmm_to_gff_testing
+    OUT_DIR: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/pipeline_runs"
+    MAIN_SPECIES: "Glossina fuscipes fuscipes"
+
+
+# --------------------------------------
+ANNOTATIONS_VIA_FASTA:
+    TX_FASTA: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/Xiaoqing/transcripts/2016-02-05_comprehensive_Gmm_transcript_set/Gisella2016_Morsitan_transcriptome/transcripts.fa"
+    ORTHOLOG_TABLE: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/Find_Gff_sequences_from_Gmm_RNA-seq_transcriptome/existing_genes/vectorbase_orthologs_GMOY_GFUI.csv"
+
+# --------------------------------------
+FILTER_PSL_TO_BED:
+    PSL: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/Xiaoqing/transcripts/2016-02-05_comprehensive_Gmm_transcript_set/gmm_transcripts_v_GfusI1_scaffold.dna2dna.psl"
+    BED_FROM_PSL_COVERAGE: 0.90
+    BED_FROM_PSL_QSIZE: 60
+
+# --------------------------------------
+SUBTRACT_GENE_MODELS:
+    GENE_MODELS: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/Glossina-fuscipes-IAEA_BASEFEATURES_GfusI1.3.gtf"
+
+# --------------------------------------
+MAKE_SNP_BEDS:
+    DO_CLEANING: True
+    P_THRESH: 0.05
+    SCAFFOLD_NAME_MAP: "/home/gus/Dropbox/uganda_data/data_repos/genome_info/assembly_info/contig_name_length.csv"
+    SNP_FILES:
+        - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_OT_1_with_p_value.txt"
+        - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_MS_1_with_p_value.txt"
+        - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_NB_1_with_p_value.txt"
+        - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_afterFS_with_p_value_LD_1.txt"
+
+# --------------------------------------
+GET_NEAREST_K_FEATURES:
+    K: 10

@@ -1,69 +1,202 @@
-# This is an example Snakefile
-# You must clear it and add your own rules
+"""Snakemake file."""
+
 # See tutorial at: http://tiny.cc/snakemake_tutorial
 
-SAMPLES = ["A", "B"]
+import os
+
+import yaml
+
+import pandas as pd
+import numpy as np
+
+from matplotlib import pyplot as plt
+import seaborn as sns
+sns.set_style("whitegrid")
+
+from python.functions import *
+
+ORIGINAL_CONFIG_AS_STRING = yaml.dump(config, default_flow_style=False)
 
 
+#### COMMON RUN SPECIFICS ####
+
+RUN_NAME = config["COMMON"]["RUN_NAME"]
+OUT_DIR = "{base_dir}/{run_name}".format(base_dir=config["COMMON"]["OUT_DIR"], run_name=RUN_NAME)
+
+
+
+
+############ BEGIN PIPELINE RULES ############
+
+
+#### SAVE_RUN_CONFIG ####
+SAVE_RUN_CONFIG_OUT = OUT_DIR+"/{RUN_NAME}.yaml".format(RUN_NAME=RUN_NAME)
+
+rule save_run_config:
+    input:
+    output:
+        file=SAVE_RUN_CONFIG_OUT
+
+    run:
+        with open(output.file, 'w') as cnf_out:
+            cnf_out.write(ORIGINAL_CONFIG_AS_STRING)
+
+
+# ------------------------- #
+#### ANNOTATIONS_VIA_FASTA ####
+ANNOTATIONS_VIA_FASTA = config["ANNOTATIONS_VIA_FASTA"]
+ANNOTATIONS_VIA_FASTA_OUT = OUT_DIR+"/annotations_via_fasta"
+ANNOTATIONS_XLS = ANNOTATIONS_VIA_FASTA_OUT+"/annotations_via_fasta.xls"
+TX_FASTA = ANNOTATIONS_VIA_FASTA["TX_FASTA"]
+ORTHOLOG_TABLE = ANNOTATIONS_VIA_FASTA["ORTHOLOG_TABLE"]
+
+# ---
+rule annotations_via_fasta:
+    input:
+        tx_fasta=TX_FASTA,
+        ortholog_table=ORTHOLOG_TABLE
+    output:
+        annotations_xls=ANNOTATIONS_XLS
+
+    script:
+        "python/scripts/annotations_via_fasta.py"
+
+
+# ------------------------- #
+#### FILTER_PSL_TO_BED ####
+FILTER_PSL_TO_BED = config["FILTER_PSL_TO_BED"]
+PSL = FILTER_PSL_TO_BED["PSL"]
+
+FILTER_PSL_TO_BED_OUT = OUT_DIR+"/filter_psl_to_bed"
+BED_FROM_PSL = FILTER_PSL_TO_BED_OUT+"/filtered_bed_from_psl.bed"
+TX_LENGTH_VS_HITS = FILTER_PSL_TO_BED_OUT+"/tx_length_vs_hits.png"
+FILTERED_TX_DATA = FILTER_PSL_TO_BED_OUT+"/filtered_tx_data.csv"
+
+config["FILTERED_TX_DATAFRAME"] = pd.DataFrame()
+
+# ---
+rule filter_psl_to_bed:
+    params:
+        bed_from_psl_coverage=FILTER_PSL_TO_BED["BED_FROM_PSL_COVERAGE"],
+        bed_from_psl_qsize=FILTER_PSL_TO_BED["BED_FROM_PSL_QSIZE"]
+    input:
+        psl=PSL,
+        orthos=rules.annotations_via_fasta.output.annotations_xls
+    output:
+        bed_from_psl=BED_FROM_PSL,
+        tx_length_vs_hits=TX_LENGTH_VS_HITS,
+        filtered_tx_data=FILTERED_TX_DATA,
+
+    script:
+        "python/scripts/filter_psl_to_bed.py"
+
+
+# ------------------------- #
+#### SUBTRACT_GENE_MODELS ####
+SUBTRACT_GENE_MODELS = config["SUBTRACT_GENE_MODELS"]
+GENE_MODELS = SUBTRACT_GENE_MODELS["GENE_MODELS"]
+
+SUBTRACT_GENE_MODELS_OUT = OUT_DIR+"/subtract_gene_models"
+GENE_MODEL_SUBTRACTED = SUBTRACT_GENE_MODELS_OUT+"/gene_model_subtracted.bed"
+GENES_ONLY_SORTED = SUBTRACT_GENE_MODELS_OUT+"/genes_only_sorted.gtf"
+
+# ---
+rule subtract_gene_models:
+    input:
+        gene_models=GENE_MODELS,
+        bed_from_psl=rules.filter_psl_to_bed.output.bed_from_psl,
+
+    output:
+        gene_model_subtracted=GENE_MODEL_SUBTRACTED,
+        genes_only_sorted=GENES_ONLY_SORTED,
+
+    script:
+        "python/scripts/subtract_gene_models.py"
+
+
+# ------------------------- #
+#### MAKE_SNP_BEDS ####
+MAKE_SNP_BEDS = config["MAKE_SNP_BEDS"]
+SCAFFOLD_NAME_MAP = MAKE_SNP_BEDS["SCAFFOLD_NAME_MAP"]
+DO_CLEANING = MAKE_SNP_BEDS["DO_CLEANING"]
+SNP_FILES = MAKE_SNP_BEDS["SNP_FILES"]
+P_THRESH = MAKE_SNP_BEDS["P_THRESH"]
+
+MAKE_SNP_BEDS_OUT = OUT_DIR+"/make_snp_beds"
+SNP_BEDS = ["{path}/{basename}.bed".format(path=MAKE_SNP_BEDS_OUT, basename=os.path.splitext(os.path.basename(x))[0]) for x in SNP_FILES]
+
+# ---
+rule make_snp_beds:
+    params:
+        do_cleaning=DO_CLEANING,
+        scaffold_name_map=SCAFFOLD_NAME_MAP,
+        p_thresh=P_THRESH
+    input:
+        SNP_FILES
+    output:
+        SNP_BEDS
+
+    script:
+        "python/scripts/make_snp_beds.py"
+
+
+# ------------------------- #
+#### GET_NEAREST_K_FEATURES ####
+GET_NEAREST_K_FEATURES = config["GET_NEAREST_K_FEATURES"]
+K_NUMBER = GET_NEAREST_K_FEATURES["K"]
+
+GET_NEAREST_K_FEATURES_OUT = OUT_DIR+'/get_nearest_k_features'
+NEAREST_FEATURES_BEDS = ["{path}/{basename}.nearest.bed".format(path=GET_NEAREST_K_FEATURES_OUT, basename=os.path.splitext(os.path.basename(x))[0]) for x in SNP_BEDS]
+
+# ---
+rule get_nearest_k_features:
+    params:
+        k_number=K_NUMBER
+    input:
+        snp_beds=rules.make_snp_beds.output,
+        gene_model_subtracted=rules.subtract_gene_models.output.gene_model_subtracted,
+        genes_only_sorted=rules.subtract_gene_models.output.genes_only_sorted
+
+    output:
+        nearest_features_beds=NEAREST_FEATURES_BEDS
+
+    script:
+        "python/scripts/get_nearest_k_features.py"
+
+    # run:
+    #     k_number = snakemake.params.k_number
+    #
+    #     snp_beds = snakemake.input.snp_beds
+    #     gene_model_subtracted = snakemake.input.gene_model_subtracted
+    #     genes_only_sorted = snakemake.input.genes_only_sorted
+    #
+    #
+    # nearest_features_beds = snakemake.output
+    #
+    #     for snp_bed, nearest_bed in zip(snp_beds, nearest_features_beds):
+    #
+    #         snp_bed = pbt.BedTool(snp_bed)
+    #         gene_model_subtracted_bed = pbt.BedTool(gene_model_subtracted)
+    #         genes_only_sorted_bed = pbt.BedTool(genes_only_sorted)
+    #
+    #     shell("""bedtools closest -a {input.snp_beds} -b {input.gene_model_subtracted} {input.genes_only_sorted} \
+    #     -k {params.k_number} \
+    #     -names novel_mapped_tx official_annotations \
+    #     -t all -D ref -mdb each > \
+    #     {output}""")
+
+# ------------------------- #
+
+
+
+#### ALL ####
+input_all = [rules.save_run_config.output,
+             rules.annotations_via_fasta.output,
+             rules.filter_psl_to_bed.output,
+             rules.subtract_gene_models.output,
+             rules.make_snp_beds.output,
+             rules.get_nearest_k_features.output]
+# ---
 rule all:
     input:
-        "report.html"
-
-rule bwa_map:
-    input:
-        "data/genome.fa",
-        "data/samples/{sample}.fastq"
-    output:
-        "mapped_reads/{sample}.bam"
-    shell:
-        "bwa mem {input} | samtools view -Sb - > {output}"
-
-rule samtools_sort:
-    input:
-        "mapped_reads/{sample}.bam"
-    output:
-        "sorted_reads/{sample}.bam"
-    shell:
-        "samtools sort -T sorted_reads/{wildcards.sample} "
-        "-O bam {input} > {output}"
-
-rule samtools_index:
-    input:
-        "sorted_reads/{sample}.bam"
-    output:
-        "sorted_reads/{sample}.bam.bai"
-    shell:
-        "samtools index {input}"
-
-rule bcftools_call:
-    input:
-        fa="data/genome.fa",
-        bam=expand("sorted_reads/{sample}.bam", sample=SAMPLES),
-        bai=expand("sorted_reads/{sample}.bam.bai", sample=SAMPLES)
-    output:
-        "calls/all.vcf"
-    shell:
-        "samtools mpileup -g -f {input.fa} {input.bam} | "
-        "bcftools call -mv - > {output}"
-
-
-rule report:
-    input:
-        "calls/all.vcf"
-    output:
-        "report.html"
-    run:
-        from snakemake.utils import report
-        with open(input[0]) as vcf:
-            n_calls = sum(1 for l in vcf if not l.startswith("#"))
-
-        report("""
-        An example variant calling workflow
-        ===================================
-
-        Reads were mapped to the Yeast
-        reference genome and variants were called jointly with
-        SAMtools/BCFtools.
-
-        This resulted in {n_calls} variants (see Table T1_).
-        """, output[0], T1=input[0])
+        input_all
