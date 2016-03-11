@@ -23,7 +23,7 @@ SUBTRACT_GENE_MODELS:
 MAKE_SNP_BEDS:
     DO_CLEANING: True
     P_THRESH: 0.05
-    SCAFFOLD_NAME_MAP: "/home/gus/Dropbox/uganda_data/data_repos/genome_info/assembly_info/contig_name_length.csv"
+    SCAFFOLD_NAME_MAP: "/home/gus/MEGAsync/data/contig_name_length.csv"
     SNP_FILES:
         - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_OT_1_with_p_value.txt"
         - "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/SNPs_lists/snp_list_MS_1_with_p_value.txt"
