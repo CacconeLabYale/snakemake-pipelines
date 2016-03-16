@@ -1,0 +1,171 @@
+"""Snakemake file."""
+
+# See tutorial at: http://tiny.cc/snakemake_tutorial
+
+import os
+
+import yaml
+
+import pandas as pd
+import numpy as np
+
+from python.functions import *
+
+ORIGINAL_CONFIG_AS_STRING = yaml.dump(config, default_flow_style=False)
+
+
+#### COMMON RUN SPECIFICS ####
+
+RUN_NAME = config["COMMON"]["RUN_NAME"]
+# OUT_DIR = "{base_dir}/{run_name}".format(base_dir=config["COMMON"]["OUT_DIR"], run_name=RUN_NAME)
+OUT_DIR = config["COMMON"]["OUT_DIR"]
+
+
+
+############ BEGIN PIPELINE RULES ############
+
+
+#### SAVE_RUN_CONFIG ####
+SAVE_RUN_CONFIG_OUT = OUT_DIR+"/{RUN_NAME}.yaml".format(RUN_NAME=RUN_NAME)
+
+rule save_run_config:
+    input:
+    output:
+        file=SAVE_RUN_CONFIG_OUT
+
+    run:
+        with open(output.file, 'w') as cnf_out:
+            cnf_out.write(ORIGINAL_CONFIG_AS_STRING)
+
+
+# ------------------------- #
+#### MAKE_OOC ####
+MAKE_OOC = config["MAKE_OOC"]
+GENOME = MAKE_OOC["GENOME"]
+OLIGO_LEN = MAKE_OOC["OLIGO_LEN"]
+
+
+OOC = OUT_DIR+"/{OLIGO_LEN}.ooc"
+
+# ---
+rule make_ooc:
+    params:
+        oligo_len=OLIGO_LEN
+    input:
+        genome=GENOME,
+    output:
+        ooc=OOC
+
+    shell:
+        """blat {input.genome} \
+        /dev/null /dev/null \
+        -tileSize={params.oligo_len} -makeOoc={output.ooc}"""
+
+
+
+# ------------------------- #
+#### RUN_BLAT ####
+RUN_BLAT = config["RUN_BLAT"]
+TRANSCRIPTS = RUN_BLAT["TRANSCRIPTS"]
+PSL_NAME = RUN_BLAT["PSL_NAME"]
+
+
+PSL = OUT_DIR+"/{psl_name}".format(psl_name=PSL_NAME)
+
+# ---
+rule run_blat:
+    params:
+        oligo_len=OLIGO_LEN
+    input:
+        genome=GENOME,
+        transcripts=TRANSCRIPTS,
+        ooc=rules.make_ooc.output.ooc
+    output:
+        psl=PSL
+
+    shell:
+        """blat {input.genome} {input.transcripts} \
+        -q=dna -t=dna -ooc={input.ooc} \
+        {output.psl} """
+
+
+# # ------------------------- #
+# #### GTF_JUST_EXONS ####
+# GTF_JUST_EXONS = config["GTF_JUST_EXONS"]
+# GTF_PATH = GTF_JUST_EXONS["GTF_PATH"]
+#
+# GTF_BASE_NAME = os.path.splitext(os.path.basename(GTF_PATH))
+# GTF_EXONS = OUT_DIR+"/{base_name}.exons.gtf".format(base_name=GTF_BASE_NAME[0])
+#
+# # ---
+# rule gtf_just_exons:
+#     input:
+#         gtf_path=GTF_PATH,
+#     output:
+#         gtf_exons=GTF_EXONS,
+#
+#     shell:
+#         """awk '/\texon\t/' \
+#         < {input.gtf_path} | \
+#         sort -k 1,1 -k 4,4n > \
+#         {output.gtf_exons}
+#         """
+
+
+# ------------------------- #
+#### GTF_TO_BED ####
+GTF_TO_BED = config["GTF_TO_BED"]
+GTF = GTF_TO_BED["GTF"]
+
+BED_BASE_NAME = os.path.splitext(os.path.basename(GTF))
+
+BED = OUT_DIR+"/{base_name}.bed".format(base_name=BED_BASE_NAME[0])
+GTF_DB =  OUT_DIR+"/{base_name}.gtf.db".format(base_name=BED_BASE_NAME[0])
+
+# ---
+rule gtf_to_bed:
+    input:
+        gtf=GTF,
+    output:
+        bed=BED,
+        gtf_db=GTF_DB,
+
+    script:
+        "python/scripts/gtf_to_bed.py"
+
+
+# ------------------------- #
+#### SORT_GENES_BED ####
+GTF = GTF_TO_BED["GTF"]
+
+BED_SORTED = OUT_DIR+"/{base_name}.sorted.bed".format(base_name=BED_BASE_NAME[0])
+
+
+
+# ---
+rule sort_genes_bed:
+    input:
+        bed=rules.gtf_to_bed.output.bed,
+    output:
+        bed_sorted=BED_SORTED,
+
+    shell:
+        """sort -k 1,1 -k 2,2n \
+        {input.bed} > \
+        {output.bed_sorted}
+        """
+
+
+#### ALL ####
+input_all = [rules.save_run_config.output,
+             rules.make_ooc.output,
+             rules.run_blat.output,
+             rules.gtf_to_bed.output,
+             rules.sort_genes_bed.output
+             ]
+
+
+# ---
+rule all:
+    input:
+        input_all

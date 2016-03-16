@@ -94,21 +94,19 @@ rule filter_psl_to_bed:
 # ------------------------- #
 #### SUBTRACT_GENE_MODELS ####
 SUBTRACT_GENE_MODELS = config["SUBTRACT_GENE_MODELS"]
-GENE_MODELS = SUBTRACT_GENE_MODELS["GENE_MODELS"]
+GENE_MODELS_BED = SUBTRACT_GENE_MODELS["GENE_MODELS_BED"]
 
 SUBTRACT_GENE_MODELS_OUT = OUT_DIR+"/subtract_gene_models"
 GENE_MODEL_SUBTRACTED = SUBTRACT_GENE_MODELS_OUT+"/gene_model_subtracted.bed"
-GENES_ONLY_SORTED = SUBTRACT_GENE_MODELS_OUT+"/genes_only_sorted.gtf"
 
 # ---
 rule subtract_gene_models:
     input:
-        gene_models=GENE_MODELS,
+        gene_models_bed=GENE_MODELS_BED,
         bed_from_psl=rules.filter_psl_to_bed.output.bed_from_psl,
 
     output:
         gene_model_subtracted=GENE_MODEL_SUBTRACTED,
-        genes_only_sorted=GENES_ONLY_SORTED,
 
     script:
         "python/scripts/subtract_gene_models.py"
@@ -141,6 +139,33 @@ rule make_snp_beds:
 
 
 # ------------------------- #
+#### SORT_BED_FILES ####
+# ---
+rule sort_bed_files:
+    input:
+        snp_beds=rules.make_snp_beds.output,
+        gene_model_subtracted=rules.subtract_gene_models.output.gene_model_subtracted,
+        gene_models_bed=rules.subtract_gene_models.input.gene_models_bed
+
+    output:
+        sorted_status=OUT_DIR+"/sort_bed_files/sorted_status"
+
+    shell:
+        """
+
+            for i in {input}
+            do
+                sort -k1,1 -k2,2n $i > $i.tmp
+                mv $i.tmp $i
+            done
+            touch {output}
+        """
+
+
+
+
+
+# ------------------------- #
 #### GET_NEAREST_K_FEATURES ####
 GET_NEAREST_K_FEATURES = config["GET_NEAREST_K_FEATURES"]
 K_NUMBER = GET_NEAREST_K_FEATURES["K"]
@@ -155,7 +180,7 @@ rule get_nearest_k_features:
     input:
         snp_beds=rules.make_snp_beds.output,
         gene_model_subtracted=rules.subtract_gene_models.output.gene_model_subtracted,
-        genes_only_sorted=rules.subtract_gene_models.output.genes_only_sorted
+        gene_models=rules.subtract_gene_models.input.gene_models_bed
 
     output:
         nearest_features_beds=NEAREST_FEATURES_BEDS
@@ -195,6 +220,7 @@ input_all = [rules.save_run_config.output,
              rules.filter_psl_to_bed.output,
              rules.subtract_gene_models.output,
              rules.make_snp_beds.output,
+             rules.sort_bed_files.output,
              rules.get_nearest_k_features.output]
 # ---
 rule all:

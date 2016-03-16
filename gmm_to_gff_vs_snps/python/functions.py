@@ -55,7 +55,7 @@ def psl_to_bed(psl):
     | strand      | strand        |
     | thickStart  | tname         |
     | thickEnd    | tstart        |
-    | itemRgb     | "255,255,255" |
+    | itemRgb     | "0,0,0" |
     | blockCount  | blockcount    |
     | blockSizes  | blocksizes    |
     | blockStarts | tstarts       |
@@ -70,7 +70,7 @@ def psl_to_bed(psl):
     bed["strand"] = psl["strand"].copy()
     bed["thickStart"] = psl["tstart"].copy()
     bed["thickEnd"] = psl["tend"].copy()
-    bed["itemRgb"] = "255,255,255"
+    bed["itemRgb"] = "0,0,0"
     bed["blockCount"] = psl["blockcount"].copy()
     bed["blockSizes"] = psl["blocksizes"].copy()
     bed["blockStarts"] = psl["tstarts"].copy()

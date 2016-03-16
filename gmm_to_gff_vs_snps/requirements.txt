@@ -12,6 +12,7 @@ pandas
 numpy
 bedtools
 pybedtools
+gffutils
 blat
 pyfasta
 seaborn

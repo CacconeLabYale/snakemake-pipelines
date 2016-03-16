@@ -1,0 +1,25 @@
+COMMON:
+    RUN_NAME: gmm_to_gff_testing
+    OUT_DIR: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/pipeline_prep/produced"
+    MAIN_SPECIES: "Glossina fuscipes fuscipes"
+
+
+# --------------------------------------
+MAKE_OOC:
+    GENOME: ""
+    OLIGO_LEN: 11
+
+# --------------------------------------
+RUN_BLAT:
+    TRANSCRIPTS: ""
+    PSL_NAME: "gmm_transcripts_v_GfusI1_scaffold.dna2dna.psl"
+# --------------------------------------
+# GTF_JUST_EXONS:
+#     GTF_PATH: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/pipeline_prep/Glossina-fuscipes-IAEA_BASEFEATURES_GfusI1.3.gtf"
+
+# --------------------------------------
+GTF_TO_BED:
+    GTF: "/home/gus/MEGAsync/zim/main/Yale/Collaborations/Hongyu-tsetse/gmm_to_gff_pipeline/pipeline_prep/Glossina-fuscipes-IAEA_BASEFEATURES_GfusI1.3.gtf"
+
+
+# --------------------------------------
